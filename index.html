@@ -24,6 +24,16 @@
       padding: 10px 12px; border: 0; border-radius: 10px;
       background: rgba(255,255,255,.9);
     }
+    .story {
+      position: fixed; top: 14px; left: 50%; transform: translateX(-50%);
+      padding: 10px 14px; border-radius: 12px;
+      background: rgba(0,0,0,0.55); color: #f7f3e9;
+      font: 700 15px/1.2 "Helvetica Neue", Arial, sans-serif;
+      letter-spacing: 0.3px; text-shadow: 0 1px 6px rgba(0,0,0,0.6);
+      pointer-events: none;
+      opacity: 0; transition: opacity 0.35s ease;
+    }
+    .story.visible { opacity: 1; }
   </style>
 
   <script>
@@ -189,6 +199,7 @@
     <button id="btn-scale-+">＋</button>
     <button id="btn-color">🎨</button>
   </div>
+  <div class="story" id="story">Scan the sky marker to awaken the scene.</div>
 
   <a-scene
     embedded
@@ -200,8 +211,8 @@
     <a-entity id="ray" cursor="rayOrigin: mouse" raycaster="objects: .raytarget"></a-entity>
 
     <!-- Lights -->
-    <a-entity light="type: ambient; intensity: 0.8"></a-entity>
-    <a-entity light="type: directional; intensity: 0.6" position="0 1 1"></a-entity>
+    <a-entity id="ambLight" light="type: ambient; intensity: 0.9; color: #a5c2ff"></a-entity>
+    <a-entity id="dirLight" light="type: directional; intensity: 0.65; color: #cdd9ff" position="0 1 1"></a-entity>
 
     <a-nft
       id="marker"
@@ -266,6 +277,9 @@
   <script>
     const hud  = document.getElementById('hud');
     const cube = document.getElementById('cube');
+    const story = document.getElementById('story');
+    const ambLight = document.getElementById('ambLight');
+    const dirLight = document.getElementById('dirLight');
 
     // Buttons
     document.getElementById('btn-rot-l').addEventListener('click', () => nudgeRot(-15));
@@ -288,6 +302,14 @@
 
     document.getElementById('btn-color').addEventListener('click', () => cube.emit('random-color'));
 
+    const showStory = (msg, ms=2800) => {
+      story.textContent = msg;
+      story.classList.add('visible');
+      clearTimeout(showStory._t);
+      showStory._t = setTimeout(() => story.classList.remove('visible'), ms);
+    };
+    showStory('Scan the sky marker to awaken the scene.', 2400);
+
     // Gesture hooks
     cube.addEventListener('tap',       () => cube.emit('toggle-spin'));        // single tap: spin on/off
     cube.addEventListener('doubletap', () => cube.emit('random-color'));       // double tap: recolor
@@ -306,10 +328,14 @@
         cube.setAttribute('scale', {x:0.01, y:0.01, z:0.01});
         cube.setAttribute('animation__pop',
           'property: scale; to: 3 3 3; dur: 800; easing: easeOutElastic;');
+        showStory('The starry sky stirs—find the guardian.');
       }
       if (!unlockedB) {
         unlockedB = true;
         markerB.setAttribute('visible', true);
+        ambLight.setAttribute('light', 'type: ambient; intensity: 1.0; color: #ffd7a3');
+        dirLight.setAttribute('light', 'type: directional; intensity: 0.8; color: #ffb37a');
+        showStory('Guardian revealed. The anime sky awaits.');
       }
     });
     markerB.addEventListener('markerFound', () => {

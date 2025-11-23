@@ -334,6 +334,13 @@
       clearTimeout(showStory._t);
       showStory._t = setTimeout(() => story.classList.remove('visible'), ms);
     };
+    const showStory3D = (el, msg, ms=5000) => {
+      if (!el) return;
+      el.setAttribute('text', 'value', msg);
+      el.setAttribute('visible', true);
+      clearTimeout(el._t);
+      el._t = setTimeout(() => el.setAttribute('visible', false), ms);
+    };
     // Initial prompt before any marker is found
     showStory('Scan the sky marker to awaken the scene.', 5000);
 
@@ -368,7 +375,7 @@
         cube.setAttribute('scale', {x:0.01, y:0.01, z:0.01});
         cube.setAttribute('animation__pop',
           'property: scale; to: 3 3 3; dur: 800; easing: easeOutElastic;');
-        showStory('The starry sky stirs—find the guardian.', 5000);
+        showStory3D(story3dA, 'The starry sky stirs—find the guardian.', 5000);
       }
       if (!unlockedB) {
         unlockedB = true;
@@ -379,7 +386,7 @@
         }
         ambLight.setAttribute('light', 'type: ambient; intensity: 1.0; color: #ffd7a3');
         dirLight.setAttribute('light', 'type: directional; intensity: 0.8; color: #ffb37a');
-        showStory('Guardian revealed. The anime sky awaits.', 5000);
+        showStory3D(story3dB, 'Guardian revealed. The anime sky awaits.', 5000);
       }
     });
     markerB.addEventListener('markerFound', () => {

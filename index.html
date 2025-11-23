@@ -341,6 +341,7 @@
     markerB.addEventListener('markerFound', () => {
       if (!unlockedB) {
         markerB.setAttribute('visible', false);
+        return;
       }
     });
   </script>

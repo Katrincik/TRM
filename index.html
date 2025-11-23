@@ -203,17 +203,11 @@
     <a-entity light="type: ambient; intensity: 0.8"></a-entity>
     <a-entity light="type: directional; intensity: 0.6" position="0 1 1"></a-entity>
 
-    <!-- NFT Marker (replace URL base if you switch datasets)
-         Options:
-         url="istockphoto-626851612-612x612"   (current)
-         url="squirrel-clipart-cheek-stuffer-squirrel-vector-illustration-black-white_1027351-12994"
-         url="swallowtail-butterfly-outline-design-butterfly-clipart-logo-illustration-in-black-and-white-vector"
-    -->
     <a-nft
       id="marker"
       type="nft"
       emitevents="true"
-      url="istockphoto-626851612-612x612"
+      url="360_F_307438274_Q7IwbWhh6JssHt8ma0PjrxHlalOPHNgY"
       smooth="true"
       smoothCount="10"
       smoothTolerance="0.01"
@@ -227,8 +221,8 @@
       <!-- Interactive 3D model -->
       <a-entity id="cube" class="raytarget"
                 position="0 0.1 0"
-                scale="0.25 0.25 0.25"
-                gltf-model="cloudy_mountain/scene.gltf"
+                scale="1.2 1.2 1.2"
+                gltf-model="starry_night_sky_hdri_background_photosphere/scene.gltf"
                 tap-gestures spin-toggle
                 drag-on-plane="plane: #dragplane; yOffset: 0.1; radius: 0.6"
                 pinch-scale twist-rotate>
@@ -256,8 +250,8 @@
 
       <a-entity id="cube-b" class="raytarget"
                 position="0 0.15 0"
-                scale="0.4 0.4 0.4"
-                gltf-model="BoxInstanced.gltf"
+                scale="1.2 1.2 1.2"
+                gltf-model="free_-_skybox_anime_sky/scene.gltf"
                 tap-gestures spin-toggle
                 drag-on-plane="plane: #dragplane-b; yOffset: 0.15; radius: 0.6"
                 pinch-scale twist-rotate>
@@ -303,7 +297,16 @@
     const markerA = document.getElementById('marker');
     const markerB = document.getElementById('marker-b');
     let unlockedB = false;
+    let poppedA = false;
     markerA.addEventListener('markerFound', () => {
+      if (!poppedA) {
+        poppedA = true;
+        // Play a one-time scale-up when marker A is first seen
+        cube.removeAttribute('animation__pop');
+        cube.setAttribute('scale', {x:0.01, y:0.01, z:0.01});
+        cube.setAttribute('animation__pop',
+          'property: scale; to: 3 3 3; dur: 800; easing: easeOutElastic;');
+      }
       if (!unlockedB) {
         unlockedB = true;
         markerB.setAttribute('visible', true);

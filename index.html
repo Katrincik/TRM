@@ -49,6 +49,23 @@
     }
   });
 
+  // Render text above everything (disable depth testing)
+  AFRAME.registerComponent('always-on-top', {
+    schema: {order: {default: 9999}},
+    init(){
+      const mesh = this.el.getObject3D('mesh');
+      if (mesh && mesh.material) {
+        mesh.material.depthTest = false;
+        mesh.material.depthWrite = false;
+      }
+      this.el.object3D.renderOrder = this.data.order;
+      this.el.addEventListener('object3dset', () => {
+        const m = this.el.getObject3D('mesh')?.material;
+        if (m) { m.depthTest = false; m.depthWrite = false; }
+      });
+    }
+  });
+
   // ---------- 1) Tap / doubletap / longpress ----------
   AFRAME.registerComponent('tap-gestures', {
     schema: {longMs:{default:500}},
@@ -252,7 +269,8 @@
                 text="value: ; align: center; width: 6; color: #fffbe6;"
                 position="0 3 0"
                 scale="1 1 1"
-                look-at-camera
+                material="shader: flat; color: #fffbe6; transparent: true; depthTest: false; depthWrite: false"
+                look-at-camera always-on-top
                 visible="false"></a-entity>
 
       <!-- Marker center dot (optional) -->
@@ -288,7 +306,8 @@
                 text="value: ; align: center; width: 6; color: #fffbe6;"
                 position="0 3 0"
                 scale="1 1 1"
-                look-at-camera
+                material="shader: flat; color: #fffbe6; transparent: true; depthTest: false; depthWrite: false"
+                look-at-camera always-on-top
                 visible="false"></a-entity>
 
       <a-cylinder radius="0.01" height="0.001" color="#444"></a-cylinder>

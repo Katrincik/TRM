@@ -452,6 +452,31 @@
       showStory3D(story3dB, 'Guardian revealed. The anime sky awaits.', 5000);
     });
 
+    // Reliable marker lost detection for NFT markers
+    setInterval(() => {
+      // --- Marker A ---
+      const isAVisible = markerA.object3D.visible;
+      if (isAVisible && !markerAVisible) {
+        markerAVisible = true;
+        hideStory();
+      }
+      if (!isAVisible && markerAVisible) {
+        markerAVisible = false;
+        showStory3D(story3dA, 'The starry sky stirs—find the guardian.', 5000);
+      }
+
+      // --- Marker B ---
+      const isBVisible = markerB.object3D.visible;
+      if (isBVisible && !markerBVisible) {
+        markerBVisible = true;
+        hideStory();
+      }
+      if (!isBVisible && markerBVisible) {
+        markerBVisible = false;
+        showStory3D(story3dB, 'Guardian revealed. The anime sky awaits.', 5000);
+      }
+    }, 150); // runs every 150ms
+
   </script>
 </body>
 </html>

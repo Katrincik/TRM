@@ -269,14 +269,14 @@
       </a-entity>
 
       <a-entity id="story3d-a"
-                text="value: ; align: center; width: 6; color: #fffbe6;"
+                text="value: ; align: center; width: 6; color: #fffbe6; opacity: 0"
                 position="0 3 0"
                 scale="1 1 1"
-                material="shader: flat; color: #fffbe6; transparent: true; depthTest: false; depthWrite: false"
+                material="shader: flat; transparent: true; depthTest: false; depthWrite: false"
                 look-at-camera always-on-top
                 visible="false"
-                animation__fadein="property: opacity; from: 0; to: 1; dur: 400; easing: easeOutQuad"
-                animation__fadeout="property: opacity; from: 1; to: 0; dur: 400; easing: easeOutQuad"
+                animation__fadein="property: text.opacity; from: 0; to: 1; dur: 400; easing: easeOutQuad"
+                animation__fadeout="property: text.opacity; from: 1; to: 0; dur: 400; easing: easeOutQuad"
       ></a-entity>
 
       <!-- Marker center dot (optional) -->
@@ -309,14 +309,14 @@
       </a-entity>
 
       <a-entity id="story3d-b"
-                text="value: ; align: center; width: 6; color: #fffbe6;"
+                text="value: ; align: center; width: 6; color: #fffbe6; opacity: 0"
                 position="0 3 0"
                 scale="1 1 1"
-                material="shader: flat; color: #fffbe6; transparent: true; depthTest: false; depthWrite: false"
+                material="shader: flat; transparent: true; depthTest: false; depthWrite: false"
                 look-at-camera always-on-top
                 visible="false"
-                animation__fadein="property: opacity; from: 0; to: 1; dur: 400; easing: easeOutQuad"
-                animation__fadeout="property: opacity; from: 1; to: 0; dur: 400; easing: easeOutQuad"
+                animation__fadein="property: text.opacity; from: 0; to: 1; dur: 400; easing: easeOutQuad"
+                animation__fadeout="property: text.opacity; from: 1; to: 0; dur: 400; easing: easeOutQuad"
       ></a-entity>
 
       <a-cylinder radius="0.01" height="0.001" color="#444"></a-cylinder>
@@ -382,6 +382,7 @@
 
       el._t = setTimeout(() => {
         el.emit('fadeout');
+        setTimeout(() => el.setAttribute('visible', false), 400); // fade-out duration
       }, ms);
     };
 

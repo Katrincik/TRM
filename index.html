@@ -31,8 +31,11 @@
       font: 700 15px/1.2 "Helvetica Neue", Arial, sans-serif;
       letter-spacing: 0.3px; text-shadow: 0 1px 6px rgba(0,0,0,0.6);
       pointer-events: none;
-      opacity: 0; transition: opacity 0.35s ease;
+
+      opacity: 0;
+      transition: opacity 0.45s ease;
     }
+
     .story.visible { opacity: 1; }
   </style>
 
@@ -271,7 +274,10 @@
                 scale="1 1 1"
                 material="shader: flat; color: #fffbe6; transparent: true; depthTest: false; depthWrite: false"
                 look-at-camera always-on-top
-                visible="false"></a-entity>
+                visible="false"
+                animation__fadein="property: opacity; from: 0; to: 1; dur: 400; easing: easeOutQuad"
+                animation__fadeout="property: opacity; from: 1; to: 0; dur: 400; easing: easeOutQuad"
+      ></a-entity>
 
       <!-- Marker center dot (optional) -->
       <a-cylinder radius="0.01" height="0.001" color="#888"></a-cylinder>
@@ -308,7 +314,10 @@
                 scale="1 1 1"
                 material="shader: flat; color: #fffbe6; transparent: true; depthTest: false; depthWrite: false"
                 look-at-camera always-on-top
-                visible="false"></a-entity>
+                visible="false"
+                animation__fadein="property: opacity; from: 0; to: 1; dur: 400; easing: easeOutQuad"
+                animation__fadeout="property: opacity; from: 1; to: 0; dur: 400; easing: easeOutQuad"
+      ></a-entity>
 
       <a-cylinder radius="0.01" height="0.001" color="#444"></a-cylinder>
     </a-nft>
@@ -347,19 +356,35 @@
 
     document.getElementById('btn-color').addEventListener('click', () => cube.emit('random-color'));
 
-    const showStory = (msg, ms=5000) => {
+    const showStory = (msg, ms = 5000) => {
+      clearTimeout(showStory._t);
       story.textContent = msg;
       story.classList.add('visible');
-      clearTimeout(showStory._t);
-      showStory._t = setTimeout(() => story.classList.remove('visible'), ms);
+
+      showStory._t = setTimeout(() => {
+        hideStory(); // fade-out instead of instantly hiding
+      }, ms);
     };
-    const showStory3D = (el, msg, ms=5000) => {
+
+    const hideStory = () => {
+      clearTimeout(showStory._t);
+      story.classList.remove('visible');   // triggers fade-out
+    };
+
+    // ---------- 3D story versions ----------
+    const showStory3D = (el, msg, ms = 5000) => {
       if (!el) return;
+      clearTimeout(el._t);
+
       el.setAttribute('text', 'value', msg);
       el.setAttribute('visible', true);
-      clearTimeout(el._t);
-      el._t = setTimeout(() => el.setAttribute('visible', false), ms);
+      el.emit('fadein');  // we will add animations below
+
+      el._t = setTimeout(() => {
+        el.emit('fadeout');
+      }, ms);
     };
+
     // Initial prompt before any marker is found
     showStory('Scan the sky marker to awaken the scene.', 5000);
 
@@ -386,7 +411,12 @@
         lockMarkerB();
       }
     });
+
+    let markerAVisible = false;
     markerA.addEventListener('markerFound', () => {
+      markerAVisible = true;
+      hideStory();   // <= instantly hide any current story text
+
       if (!poppedA) {
         poppedA = true;
         // Play a one-time scale-up when marker A is first seen
@@ -394,26 +424,33 @@
         cube.setAttribute('scale', {x:0.01, y:0.01, z:0.01});
         cube.setAttribute('animation__pop',
           'property: scale; to: 3 3 3; dur: 800; easing: easeOutElastic;');
-        showStory3D(story3dA, 'The starry sky stirs—find the guardian.', 5000);
       }
       if (!unlockedB) {
         unlockedB = true;
         markerB.object3D.visible = true;
         markerB.setAttribute('visible', true);
-        if (cubeB && cubeB.object3D) {
-          cubeB.object3D.visible = true;
-        }
-        ambLight.setAttribute('light', 'type: ambient; intensity: 1.0; color: #ffd7a3');
-        dirLight.setAttribute('light', 'type: directional; intensity: 0.8; color: #ffb37a');
+        if (cubeB && cubeB.object3D) cubeB.object3D.visible = true;
       }
     });
+
+    markerA.addEventListener('markerLost', () => {
+      markerAVisible = false;
+
+      showStory3D(story3dA, 'The starry sky stirs—find the guardian.', 5000);
+    });
+
+    let markerBVisible = false;
     markerB.addEventListener('markerFound', () => {
-      if (!unlockedB) {
-        lockMarkerB();
-        return;
-      }
+      markerBVisible = true;
+      hideStory();
+    });
+
+    markerB.addEventListener('markerLost', () => {
+      markerBVisible = false;
+
       showStory3D(story3dB, 'Guardian revealed. The anime sky awaits.', 5000);
     });
+
   </script>
 </body>
 </html>

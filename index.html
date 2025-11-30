@@ -360,30 +360,12 @@
       clearTimeout(showStory._t);
       story.textContent = msg;
       story.classList.add('visible');
-
-      showStory._t = setTimeout(() => {
-        hideStory(); // fade-out instead of instantly hiding
-      }, ms);
+      showStory._t = setTimeout(() => hideStory(), ms);
     };
 
     const hideStory = () => {
       clearTimeout(showStory._t);
-      story.classList.remove('visible');   // triggers fade-out
-    };
-
-    // ---------- 3D story versions ----------
-    const showStory3D = (el, msg, ms = 5000) => {
-      if (!el) return;
-      clearTimeout(el._t);
-
-      el.setAttribute('text', 'value', msg);
-      el.setAttribute('visible', true);
-      el.emit('fadein');  // we will add animations below
-
-      el._t = setTimeout(() => {
-        el.emit('fadeout');
-        setTimeout(() => el.setAttribute('visible', false), 400); // fade-out duration
-      }, ms);
+      story.classList.remove('visible');
     };
 
     // Initial prompt before any marker is found
@@ -449,7 +431,7 @@
     markerB.addEventListener('markerLost', () => {
       markerBVisible = false;
 
-      showStory3D(story3dB, 'Guardian revealed. The anime sky awaits.', 5000);
+      showStory('Guardian revealed. The anime sky awaits.', 5000);
     });
 
     // Reliable marker lost detection for NFT markers
@@ -462,7 +444,7 @@
       }
       if (!isAVisible && markerAVisible) {
         markerAVisible = false;
-        showStory3D(story3dA, 'The starry sky stirs—find the guardian.', 5000);
+        showStory('The starry sky stirs—find the guardian.', 5000);
       }
 
       // --- Marker B ---
@@ -473,7 +455,7 @@
       }
       if (!isBVisible && markerBVisible) {
         markerBVisible = false;
-        showStory3D(story3dB, 'Guardian revealed. The anime sky awaits.', 5000);
+        showStory('Guardian revealed. The anime sky awaits.', 5000);
       }
     }, 150); // runs every 150ms
 

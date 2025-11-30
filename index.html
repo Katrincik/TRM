@@ -405,7 +405,6 @@
         }
         ambLight.setAttribute('light', 'type: ambient; intensity: 1.0; color: #ffd7a3');
         dirLight.setAttribute('light', 'type: directional; intensity: 0.8; color: #ffb37a');
-        showStory3D(story3dB, 'Guardian revealed. The anime sky awaits.', 5000);
       }
     });
     markerB.addEventListener('markerFound', () => {
@@ -413,6 +412,7 @@
         lockMarkerB();
         return;
       }
+      showStory3D(story3dB, 'Guardian revealed. The anime sky awaits.', 5000);
     });
   </script>
 </body>

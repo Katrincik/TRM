@@ -542,45 +542,48 @@
     let markerBVisible = false;
     markerB.addEventListener('markerFound', () => {
       markerBVisible = true;
-      showStory('Guardian revealed. The anime sky awaits.', 5000);
       if (!unlockedC) {
         unlockedC = true;
         markerC.object3D.visible = true;
         markerC.setAttribute('visible', true);
         if (cubeC && cubeC.object3D) cubeC.object3D.visible = true;
       }
+      showStory('Guardian revealed. The anime sky awaits.', 5000);
     });
 
     markerB.addEventListener('markerLost', () => {
       markerBVisible = false;
-      // keep C unlocked; message already shown on found
     });
 
     let markerB2Visible = false;
     markerB2.addEventListener('markerFound', () => {
-      markerB2Visible = true;
-      showStory('Guardian variant scanned — alternate path unlocked.', 5000);
       if (!unlockedC) {
         unlockedC = true;
         markerC.object3D.visible = true;
         markerC.setAttribute('visible', true);
         if (cubeC && cubeC.object3D) cubeC.object3D.visible = true;
       }
+      markerB2Visible = true;
+      showStory('Guardian variant scanned — alternate path unlocked.', 5000);
     });
 
     markerB2.addEventListener('markerLost', () => {
       markerB2Visible = false;
-      // message already shown on found
     });
 
     let markerCVisible = false;
     markerC.addEventListener('markerFound', () => {
+      if (!unlockedC) {
+        lockMarkerC();
+        return;
+      }
       markerCVisible = true;
       hideStory();
-      showStory('Final horizon unlocked — the journey is complete.', 5000);
+      // showStory('Final horizon unlocked — the journey is complete.', 5000);
     });
 
     markerC.addEventListener('markerLost', () => {
+      if (!unlockedC) return;
       markerCVisible = false;
       showStory('Final horizon unlocked — the journey is complete.', 5000);
     });

@@ -542,7 +542,7 @@
     let markerBVisible = false;
     markerB.addEventListener('markerFound', () => {
       markerBVisible = true;
-      hideStory();
+      showStory('Guardian revealed. The anime sky awaits.', 5000);
       if (!unlockedC) {
         unlockedC = true;
         markerC.object3D.visible = true;
@@ -553,13 +553,13 @@
 
     markerB.addEventListener('markerLost', () => {
       markerBVisible = false;
-      showStory('Guardian revealed. The anime sky awaits.', 5000);
+      // keep C unlocked; message already shown on found
     });
 
     let markerB2Visible = false;
     markerB2.addEventListener('markerFound', () => {
       markerB2Visible = true;
-      hideStory();
+      showStory('Guardian variant scanned — alternate path unlocked.', 5000);
       if (!unlockedC) {
         unlockedC = true;
         markerC.object3D.visible = true;
@@ -570,7 +570,7 @@
 
     markerB2.addEventListener('markerLost', () => {
       markerB2Visible = false;
-      showStory('Guardian revealed. The anime sky awaits.', 5000);
+      // message already shown on found
     });
 
     let markerCVisible = false;

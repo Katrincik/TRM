@@ -455,8 +455,9 @@
         markerBVisible = true;
         hideStory();
       }
-      if (!isBVisible && markerBVisible) {
+      if (!isBVisible && markerBVisible && !isAVisible && markerAVisible) {
         markerBVisible = false;
+        markerAVisible = false;
         // showStory('Guardian revealed. The anime sky awaits.', 5000);
         showStory('Clean sky unlocked — enjoy the guardian realm.', 5000);
       }

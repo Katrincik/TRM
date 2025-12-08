@@ -322,6 +322,84 @@
       <a-cylinder radius="0.01" height="0.001" color="#444"></a-cylinder>
     </a-nft>
 
+    <!-- Second marker variant (alternative B), also gated after the first is seen -->
+    <a-nft
+      id="marker-b2"
+      type="nft"
+      emitevents="true"
+      url="1000_F_202005434_xKPtG0bsUUHKgl5yAUxxjgYN1qwzNrfB"
+      visible="false"
+      smooth="true"
+      smoothCount="10"
+      smoothTolerance="0.01"
+      smoothThreshold="5">
+
+      <a-plane id="dragplane-b2" class="raytarget"
+               position="0 0 0" rotation="-90 0 0" width="2" height="2"
+               material="color: #000; opacity: 0; transparent: true"></a-plane>
+
+      <a-entity id="cube-b2" class="raytarget"
+                position="0 0.15 0"
+                scale="1.2 1.2 1.2"
+                gltf-model="free_-_skybox_anime_sky/scene.gltf"
+                tap-gestures spin-toggle
+                drag-on-plane="plane: #dragplane-b2; yOffset: 0.15; radius: 0.6"
+                pinch-scale twist-rotate>
+      </a-entity>
+
+      <a-entity id="story3d-b2"
+                text="value: ; align: center; width: 6; color: #fffbe6; opacity: 0"
+                position="0 3 0"
+                scale="1 1 1"
+                material="shader: flat; transparent: true; depthTest: false; depthWrite: false"
+                look-at-camera always-on-top
+                visible="false"
+                animation__fadein="property: text.opacity; from: 0; to: 1; dur: 400; easing: easeOutQuad"
+                animation__fadeout="property: text.opacity; from: 1; to: 0; dur: 400; easing: easeOutQuad"
+      ></a-entity>
+
+      <a-cylinder radius="0.01" height="0.001" color="#555"></a-cylinder>
+    </a-nft>
+
+    <!-- Third marker, gated to appear only after the second is seen -->
+    <a-nft
+      id="marker-c"
+      type="nft"
+      emitevents="true"
+      url="istockphoto-1413670045-612x612"
+      visible="false"
+      smooth="true"
+      smoothCount="10"
+      smoothTolerance="0.01"
+      smoothThreshold="5">
+
+      <a-plane id="dragplane-c" class="raytarget"
+               position="0 0 0" rotation="-90 0 0" width="2" height="2"
+               material="color: #000; opacity: 0; transparent: true"></a-plane>
+
+      <a-entity id="cube-c" class="raytarget"
+                position="0 0.15 0"
+                scale="1.2 1.2 1.2"
+                gltf-model="BoxInstanced.gltf"
+                tap-gestures spin-toggle
+                drag-on-plane="plane: #dragplane-c; yOffset: 0.15; radius: 0.6"
+                pinch-scale twist-rotate>
+      </a-entity>
+
+      <a-entity id="story3d-c"
+                text="value: ; align: center; width: 6; color: #fffbe6; opacity: 0"
+                position="0 3 0"
+                scale="1 1 1"
+                material="shader: flat; transparent: true; depthTest: false; depthWrite: false"
+                look-at-camera always-on-top
+                visible="false"
+                animation__fadein="property: text.opacity; from: 0; to: 1; dur: 400; easing: easeOutQuad"
+                animation__fadeout="property: text.opacity; from: 1; to: 0; dur: 400; easing: easeOutQuad"
+      ></a-entity>
+
+      <a-cylinder radius="0.01" height="0.001" color="#666"></a-cylinder>
+    </a-nft>
+
     <a-entity camera></a-entity>
   </a-scene>
 
@@ -329,9 +407,13 @@
     const hud  = document.getElementById('hud');
     const cube = document.getElementById('cube');
     const cubeB = document.getElementById('cube-b');
+    const cubeB2 = document.getElementById('cube-b2');
+    const cubeC = document.getElementById('cube-c');
     const story = document.getElementById('story');
     const story3dA = document.getElementById('story3d-a');
     const story3dB = document.getElementById('story3d-b');
+    const story3dB2 = document.getElementById('story3d-b2');
+    const story3dC = document.getElementById('story3d-c');
     const ambLight = document.getElementById('ambLight');
     const dirLight = document.getElementById('dirLight');
 
@@ -379,7 +461,11 @@
     // Sequential marker gating: B stays hidden until A is seen once
     const markerA = document.getElementById('marker');
     const markerB = document.getElementById('marker-b');
+    const markerB2 = document.getElementById('marker-b2');
+    const markerC = document.getElementById('marker-c');
     let unlockedB = false;
+    let unlockedB2 = false;
+    let unlockedC = false;
     let poppedA = false;
     const lockMarkerB = () => {
       markerB.object3D.visible = false;
@@ -388,10 +474,36 @@
         cubeB.object3D.visible = false;
       }
     };
+    const lockMarkerB2 = () => {
+      markerB2.object3D.visible = false;
+      markerB2.setAttribute('visible', false);
+      if (cubeB2 && cubeB2.object3D) {
+        cubeB2.object3D.visible = false;
+      }
+    };
+    const lockMarkerC = () => {
+      markerC.object3D.visible = false;
+      markerC.setAttribute('visible', false);
+      if (cubeC && cubeC.object3D) {
+        cubeC.object3D.visible = false;
+      }
+    };
     lockMarkerB();
+    lockMarkerB2();
+    lockMarkerC();
     markerB.addEventListener('componentchanged', (e) => {
       if (e.detail.name === 'visible' && !unlockedB) {
         lockMarkerB();
+      }
+    });
+    markerB2.addEventListener('componentchanged', (e) => {
+      if (e.detail.name === 'visible' && !unlockedB2) {
+        lockMarkerB2();
+      }
+    });
+    markerC.addEventListener('componentchanged', (e) => {
+      if (e.detail.name === 'visible' && !unlockedC) {
+        lockMarkerC();
       }
     });
 
@@ -414,6 +526,12 @@
         markerB.setAttribute('visible', true);
         if (cubeB && cubeB.object3D) cubeB.object3D.visible = true;
       }
+      if (!unlockedB2) {
+        unlockedB2 = true;
+        markerB2.object3D.visible = true;
+        markerB2.setAttribute('visible', true);
+        if (cubeB2 && cubeB2.object3D) cubeB2.object3D.visible = true;
+      }
     });
 
     markerA.addEventListener('markerLost', () => {
@@ -425,13 +543,46 @@
     markerB.addEventListener('markerFound', () => {
       markerBVisible = true;
       hideStory();
+      if (!unlockedC) {
+        unlockedC = true;
+        markerC.object3D.visible = true;
+        markerC.setAttribute('visible', true);
+        if (cubeC && cubeC.object3D) cubeC.object3D.visible = true;
+      }
     });
 
     markerB.addEventListener('markerLost', () => {
       markerBVisible = false;
       showStory('Guardian revealed. The anime sky awaits.', 5000);
-      // showStory('The starry sky stirs—find the guardian.', 5000);
+    });
 
+    let markerB2Visible = false;
+    markerB2.addEventListener('markerFound', () => {
+      markerB2Visible = true;
+      hideStory();
+      if (!unlockedC) {
+        unlockedC = true;
+        markerC.object3D.visible = true;
+        markerC.setAttribute('visible', true);
+        if (cubeC && cubeC.object3D) cubeC.object3D.visible = true;
+      }
+    });
+
+    markerB2.addEventListener('markerLost', () => {
+      markerB2Visible = false;
+      showStory('Guardian revealed. The anime sky awaits.', 5000);
+    });
+
+    let markerCVisible = false;
+    markerC.addEventListener('markerFound', () => {
+      markerCVisible = true;
+      hideStory();
+      showStory('Final horizon unlocked — the journey is complete.', 5000);
+    });
+
+    markerC.addEventListener('markerLost', () => {
+      markerCVisible = false;
+      showStory('Final horizon unlocked — the journey is complete.', 5000);
     });
 
     // Reliable marker lost detection for NFT markers

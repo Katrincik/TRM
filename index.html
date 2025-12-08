@@ -40,580 +40,552 @@
   </style>
 
   <script>
-  // ---------- Utilities ----------
-  const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
+    // ---------- Utilities ----------
+    const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
 
-  // Billboard text toward camera
-  AFRAME.registerComponent('look-at-camera', {
-    tick: function(){
-      const cam = this.el.sceneEl && this.el.sceneEl.camera;
-      if (!cam) return;
-      this.el.object3D.lookAt(cam.position);
-    }
-  });
-
-  // Render text above everything (disable depth testing)
-  AFRAME.registerComponent('always-on-top', {
-    schema: {order: {default: 9999}},
-    init(){
-      const mesh = this.el.getObject3D('mesh');
-      if (mesh && mesh.material) {
-        mesh.material.depthTest = false;
-        mesh.material.depthWrite = false;
+    // Billboard text toward camera
+    AFRAME.registerComponent('look-at-camera', {
+      tick: function(){
+        const cam = this.el.sceneEl && this.el.sceneEl.camera;
+        if (!cam) return;
+        this.el.object3D.lookAt(cam.position);
       }
-      this.el.object3D.renderOrder = this.data.order;
-      this.el.addEventListener('object3dset', () => {
-        const m = this.el.getObject3D('mesh')?.material;
-        if (m) { m.depthTest = false; m.depthWrite = false; }
-      });
-    }
-  });
+    });
 
-  // ---------- 1) Tap / doubletap / longpress ----------
-  AFRAME.registerComponent('tap-gestures', {
-    schema: {longMs:{default:500}},
-    init () {
-      let lastTap = 0, pressTimer = null, down = false;
-      this.el.addEventListener('mousedown', () => {
-        down = true;
-        const now = performance.now();
-        if (now - lastTap < 300) this.el.emit('doubletap');
-        lastTap = now;
-        pressTimer = setTimeout(() => { if (down) this.el.emit('longpress'); }, this.data.longMs);
-      });
-      this.el.addEventListener('mouseup', () => {
-        down = false;
-        clearTimeout(pressTimer);
-        this.el.emit('tap');
-      });
-      this.el.addEventListener('touchstart', e => e.preventDefault(), {passive:false});
-    }
-  });
-
-  // ---------- 2) Drag on a plane (marker plane) ----------
-  // Drag with mouse/touch by intersecting an invisible plane and moving the entity to that point.
-  AFRAME.registerComponent('drag-on-plane', {
-    schema: { plane: {type: 'selector'}, yOffset: {default: 0.25}, radius: {default: 0.6} },
-    init () {
-      this.dragging = false;
-      this.scene = this.el.sceneEl;
-      this.rayEl = document.querySelector('#ray'); // scene cursor ray
-      // listen on element
-      this.el.addEventListener('mousedown', () => this.dragging = true);
-      window.addEventListener('mouseup',   () => this.dragging = false);
-      window.addEventListener('touchend',  () => this.dragging = false);
-      // move
-      this.scene.addEventListener('mousemove', (e)=> this.updateDrag());
-      this.scene.addEventListener('touchmove', (e)=> this.updateDrag());
-    },
-    updateDrag () {
-      if (!this.dragging) return;
-      if (!this.data.plane) return;
-      const raycaster = this.rayEl.getObject3D('raycaster');
-      if (!raycaster) return;
-      const planeMesh = this.data.plane.getObject3D('mesh');
-      if (!planeMesh) return;
-
-      // Build a THREE.Plane from the plane entity (its world transform).
-      planeMesh.updateMatrixWorld();
-      const normal = new THREE.Vector3(0,1,0).applyQuaternion(planeMesh.getWorldQuaternion(new THREE.Quaternion()));
-      const point  = planeMesh.getWorldPosition(new THREE.Vector3());
-      const plane  = new THREE.Plane().setFromNormalAndCoplanarPoint(normal, point);
-
-      const ray = raycaster.ray; // world-space ray from cursor
-      const hit = new THREE.Vector3();
-      if (ray.intersectPlane(plane, hit)) {
-        // constrain to radius on XZ around marker center
-        const local = this.el.parentEl.object3D.worldToLocal(hit.clone());
-        const r = Math.hypot(local.x, local.z);
-        const maxR = this.data.radius;
-        if (r > maxR){
-          const k = maxR / r;
-          local.x *= k; local.z *= k;
+    // Render text above everything (disable depth testing)
+    AFRAME.registerComponent('always-on-top', {
+      schema: {order: {default: 9999}},
+      init(){
+        const mesh = this.el.getObject3D('mesh');
+        if (mesh && mesh.material) {
+          mesh.material.depthTest = false;
+          mesh.material.depthWrite = false;
         }
-        this.el.setAttribute('position', `${local.x} ${this.data.yOffset} ${local.z}`);
+        this.el.object3D.renderOrder = this.data.order;
+        this.el.addEventListener('object3dset', () => {
+          const m = this.el.getObject3D('mesh')?.material;
+          if (m) { m.depthTest = false; m.depthWrite = false; }
+        });
       }
-    }
-  });
+    });
 
-  // ---------- 3) Pinch to scale ----------
-  AFRAME.registerComponent('pinch-scale', {
-    schema: {min:{default:0.2}, max:{default:3}},
-    init(){
-      this.active = false; this.startD = 0; this.startScale = null;
-      const onStart = (e) => {
-        if (e.touches && e.touches.length === 2){
-          this.active = true;
-          this.startD = this.dist(e.touches[0], e.touches[1]);
-          this.startScale = Object.assign({}, this.el.getAttribute('scale'));
+    // ---------- 1) Tap / doubletap / longpress ----------
+    AFRAME.registerComponent('tap-gestures', {
+      schema: {longMs:{default:500}},
+      init () {
+        let lastTap = 0, pressTimer = null, down = false;
+        this.el.addEventListener('mousedown', () => {
+          down = true;
+          const now = performance.now();
+          if (now - lastTap < 300) this.el.emit('doubletap');
+          lastTap = now;
+          pressTimer = setTimeout(() => { if (down) this.el.emit('longpress'); }, this.data.longMs);
+        });
+        this.el.addEventListener('mouseup', () => {
+          down = false;
+          clearTimeout(pressTimer);
+          this.el.emit('tap');
+        });
+        this.el.addEventListener('touchstart', e => e.preventDefault(), {passive:false});
+      }
+    });
+
+    // ---------- 2) Drag on a plane (marker plane) ----------
+    // Drag with mouse/touch by intersecting an invisible plane and moving the entity to that point.
+    AFRAME.registerComponent('drag-on-plane', {
+      schema: { plane: {type: 'selector'}, yOffset: {default: 0.25}, radius: {default: 0.6} },
+      init () {
+        this.dragging = false;
+        this.scene = this.el.sceneEl;
+        this.rayEl = document.querySelector('#ray'); // scene cursor ray
+        // listen on element
+        this.el.addEventListener('mousedown', () => this.dragging = true);
+        window.addEventListener('mouseup',   () => this.dragging = false);
+        window.addEventListener('touchend',  () => this.dragging = false);
+        // move
+        this.scene.addEventListener('mousemove', (e)=> this.updateDrag());
+        this.scene.addEventListener('touchmove', (e)=> this.updateDrag());
+      },
+      updateDrag () {
+        if (!this.dragging) return;
+        if (!this.data.plane) return;
+        const raycaster = this.rayEl.getObject3D('raycaster');
+        if (!raycaster) return;
+        const planeMesh = this.data.plane.getObject3D('mesh');
+        if (!planeMesh) return;
+
+        // Build a THREE.Plane from the plane entity (its world transform).
+        planeMesh.updateMatrixWorld();
+        const normal = new THREE.Vector3(0,1,0).applyQuaternion(planeMesh.getWorldQuaternion(new THREE.Quaternion()));
+        const point  = planeMesh.getWorldPosition(new THREE.Vector3());
+        const plane  = new THREE.Plane().setFromNormalAndCoplanarPoint(normal, point);
+
+        const ray = raycaster.ray; // world-space ray from cursor
+        const hit = new THREE.Vector3();
+        if (ray.intersectPlane(plane, hit)) {
+          // constrain to radius on XZ around marker center
+          const local = this.el.parentEl.object3D.worldToLocal(hit.clone());
+          const r = Math.hypot(local.x, local.z);
+          const maxR = this.data.radius;
+          if (r > maxR){
+            const k = maxR / r;
+            local.x *= k; local.z *= k;
+          }
+          this.el.setAttribute('position', `${local.x} ${this.data.yOffset} ${local.z}`);
         }
-      };
-      const onMove = (e) => {
-        if (!this.active || !e.touches || e.touches.length < 2) return;
-        const d = this.dist(e.touches[0], e.touches[1]);
-        const mult = d / this.startD;
-        const ns = {
-          x: clamp(this.startScale.x * mult, this.data.min, this.data.max),
-          y: clamp(this.startScale.y * mult, this.data.min, this.data.max),
-          z: clamp(this.startScale.z * mult, this.data.min, this.data.max),
+      }
+    });
+
+    // ---------- 3) Pinch to scale ----------
+    AFRAME.registerComponent('pinch-scale', {
+      schema: {min:{default:0.2}, max:{default:3}},
+      init(){
+        this.active = false; this.startD = 0; this.startScale = null;
+        const onStart = (e) => {
+          if (e.touches && e.touches.length === 2){
+            this.active = true;
+            this.startD = this.dist(e.touches[0], e.touches[1]);
+            this.startScale = Object.assign({}, this.el.getAttribute('scale'));
+          }
         };
-        this.el.setAttribute('scale', ns);
-      };
-      const onEnd = () => this.active = false;
-      window.addEventListener('touchstart', onStart, {passive:false});
-      window.addEventListener('touchmove',  onMove,  {passive:false});
-      window.addEventListener('touchend',   onEnd);
-      window.addEventListener('touchcancel',onEnd);
-    },
-    dist(a,b){ const dx=a.clientX-b.clientX, dy=a.clientY-b.clientY; return Math.hypot(dx,dy); }
-  });
+        const onMove = (e) => {
+          if (!this.active || !e.touches || e.touches.length < 2) return;
+          const d = this.dist(e.touches[0], e.touches[1]);
+          const mult = d / this.startD;
+          const ns = {
+            x: clamp(this.startScale.x * mult, this.data.min, this.data.max),
+            y: clamp(this.startScale.y * mult, this.data.min, this.data.max),
+            z: clamp(this.startScale.z * mult, this.data.min, this.data.max),
+          };
+          this.el.setAttribute('scale', ns);
+        };
+        const onEnd = () => this.active = false;
+        window.addEventListener('touchstart', onStart, {passive:false});
+        window.addEventListener('touchmove',  onMove,  {passive:false});
+        window.addEventListener('touchend',   onEnd);
+        window.addEventListener('touchcancel',onEnd);
+      },
+      dist(a,b){ const dx=a.clientX-b.clientX, dy=a.clientY-b.clientY; return Math.hypot(dx,dy); }
+    });
 
-  // ---------- 4) Twist to rotate (two-finger) ----------
-  AFRAME.registerComponent('twist-rotate', {
-    schema:{degPerRad:{default:57.2958}}, // 180/π
-    init(){
-      this.active = false; this.startA = 0; this.startRotY = 0;
-      const angle = (a,b)=> Math.atan2(b.clientY-a.clientY, b.clientX-a.clientX);
-      const onStart = (e)=>{
-        if (e.touches && e.touches.length === 2){
-          this.active = true;
-          this.startA = angle(e.touches[0], e.touches[1]);
-          this.startRotY = this.el.getAttribute('rotation').y;
-        }
-      };
-      const onMove = (e)=>{
-        if (!this.active || !e.touches || e.touches.length < 2) return;
-        const a = angle(e.touches[0], e.touches[1]);
-        const delta = (a - this.startA) * this.data.degPerRad;
-        const r = this.el.getAttribute('rotation');
-        this.el.setAttribute('rotation', {x:r.x, y:this.startRotY + delta, z:r.z});
-      };
-      const onEnd = ()=> this.active = false;
-      window.addEventListener('touchstart', onStart, {passive:false});
-      window.addEventListener('touchmove',  onMove,  {passive:false});
-      window.addEventListener('touchend',   onEnd);
-      window.addEventListener('touchcancel',onEnd);
-    }
-  });
+    // ---------- 4) Twist to rotate (two-finger) ----------
+    AFRAME.registerComponent('twist-rotate', {
+      schema:{degPerRad:{default:57.2958}}, // 180/π
+      init(){
+        this.active = false; this.startA = 0; this.startRotY = 0;
+        const angle = (a,b)=> Math.atan2(b.clientY-a.clientY, b.clientX-a.clientX);
+        const onStart = (e)=>{
+          if (e.touches && e.touches.length === 2){
+            this.active = true;
+            this.startA = angle(e.touches[0], e.touches[1]);
+            this.startRotY = this.el.getAttribute('rotation').y;
+          }
+        };
+        const onMove = (e)=>{
+          if (!this.active || !e.touches || e.touches.length < 2) return;
+          const a = angle(e.touches[0], e.touches[1]);
+          const delta = (a - this.startA) * this.data.degPerRad;
+          const r = this.el.getAttribute('rotation');
+          this.el.setAttribute('rotation', {x:r.x, y:this.startRotY + delta, z:r.z});
+        };
+        const onEnd = ()=> this.active = false;
+        window.addEventListener('touchstart', onStart, {passive:false});
+        window.addEventListener('touchmove',  onMove,  {passive:false});
+        window.addEventListener('touchend',   onEnd);
+        window.addEventListener('touchcancel',onEnd);
+      }
+    });
 
-  // ---------- 5) Spin toggler + random color (hooked to taps) ----------
-  AFRAME.registerComponent('spin-toggle', {
-    schema:{speed:{default:4000}},
-    init(){
-      this.spinning = false;
-      this.el.addEventListener('toggle-spin', ()=> {
-        this.spinning = !this.spinning;
-        if (this.spinning) {
-          this.el.setAttribute('animation__spin',
-            `property: rotation; to: 0 360 0; loop: true; dur: ${this.data.speed}`);
-        } else {
-          this.el.removeAttribute('animation__spin');
-        }
-      });
-      this.el.addEventListener('random-color', ()=> {
-        const colors = ['#4CC3D9','#FFC65D','#7BC8A4','#EF2D5E','#FFFFFF'];
-        const c = colors[Math.floor(Math.random()*colors.length)];
-        this.el.setAttribute('material','color',c);
-      });
-    }
-  });
+    // ---------- 5) Spin toggler + random color (hooked to taps) ----------
+    AFRAME.registerComponent('spin-toggle', {
+      schema:{speed:{default:4000}},
+      init(){
+        this.spinning = false;
+        this.el.addEventListener('toggle-spin', ()=> {
+          this.spinning = !this.spinning;
+          if (this.spinning) {
+            this.el.setAttribute('animation__spin',
+                    `property: rotation; to: 0 360 0; loop: true; dur: ${this.data.speed}`);
+          } else {
+            this.el.removeAttribute('animation__spin');
+          }
+        });
+        this.el.addEventListener('random-color', ()=> {
+          const colors = ['#4CC3D9','#FFC65D','#7BC8A4','#EF2D5E','#FFFFFF'];
+          const c = colors[Math.floor(Math.random()*colors.length)];
+          this.el.setAttribute('material','color',c);
+        });
+      }
+    });
   </script>
 </head>
 <body>
-  <!-- HUD -->
-  <div class="hud" id="hud">
-    <button id="btn-rot-l">⟲</button>
-    <button id="btn-rot-r">⟳</button>
-    <button id="btn-scale--">−</button>
-    <button id="btn-scale-+">＋</button>
-    <button id="btn-color">🎨</button>
-  </div>
-  <div class="story" id="story">Scan the sky marker to awaken the scene.</div>
+<!-- HUD -->
+<div class="hud" id="hud">
+  <button id="btn-rot-l">⟲</button>
+  <button id="btn-rot-r">⟳</button>
+  <button id="btn-scale--">−</button>
+  <button id="btn-scale-+">＋</button>
+  <button id="btn-color">🎨</button>
+</div>
+<div class="story" id="story">Scan the sky marker to awaken the scene.</div>
 
-  <a-scene
-    embedded
-    renderer="colorManagement: true; physicallyCorrectLights: true"
-    xr-mode-ui="enabled: false"
-    arjs="trackingMethod: best; sourceType: webcam; debugUIEnabled: false">
+<a-scene
+        embedded
+        renderer="colorManagement: true; physicallyCorrectLights: true"
+        xr-mode-ui="enabled: false"
+        arjs="trackingMethod: best; sourceType: webcam; debugUIEnabled: false">
 
-    <!-- Cursor ray for mouse/touch (A-Frame builds a raycaster object3D for us) -->
-    <a-entity id="ray" cursor="rayOrigin: mouse" raycaster="objects: .raytarget"></a-entity>
+  <!-- Cursor ray for mouse/touch (A-Frame builds a raycaster object3D for us) -->
+  <a-entity id="ray" cursor="rayOrigin: mouse" raycaster="objects: .raytarget"></a-entity>
 
-    <!-- Lights -->
-    <a-entity id="ambLight" light="type: ambient; intensity: 0.9; color: #a5c2ff"></a-entity>
-    <a-entity id="dirLight" light="type: directional; intensity: 0.65; color: #cdd9ff" position="0 1 1"></a-entity>
+  <!-- Lights -->
+  <a-entity id="ambLight" light="type: ambient; intensity: 0.9; color: #a5c2ff"></a-entity>
+  <a-entity id="dirLight" light="type: directional; intensity: 0.65; color: #cdd9ff" position="0 1 1"></a-entity>
 
-    <a-nft
-      id="marker"
-      type="nft"
-      emitevents="true"
-      url="360_F_307438274_Q7IwbWhh6JssHt8ma0PjrxHlalOPHNgY"
-      smooth="true"
-      smoothCount="10"
-      smoothTolerance="0.01"
-      smoothThreshold="5">
+  <a-nft
+          id="marker"
+          type="nft"
+          emitevents="true"
+          url="360_F_307438274_Q7IwbWhh6JssHt8ma0PjrxHlalOPHNgY"
+          smooth="true"
+          smoothCount="10"
+          smoothTolerance="0.01"
+          smoothThreshold="5">
 
-      <!-- Invisible drag plane anchored to marker -->
-      <a-plane id="dragplane" class="raytarget"
-               position="0 0 0" rotation="-90 0 0" width="2" height="2"
-               material="color: #000; opacity: 0; transparent: true"></a-plane>
+    <!-- Invisible drag plane anchored to marker -->
+    <a-plane id="dragplane" class="raytarget"
+             position="0 0 0" rotation="-90 0 0" width="2" height="2"
+             material="color: #000; opacity: 0; transparent: true"></a-plane>
 
-      <!-- Interactive 3D model -->
-      <a-entity id="cube" class="raytarget"
-                position="0 0.1 0"
-                scale="1.2 1.2 1.2"
-                gltf-model="starry_night_sky_hdri_background_photosphere/scene.gltf"
-                tap-gestures spin-toggle
-                drag-on-plane="plane: #dragplane; yOffset: 0.1; radius: 0.6"
-                pinch-scale twist-rotate>
-      </a-entity>
+    <!-- Interactive 3D model -->
+    <a-entity id="cube" class="raytarget"
+              position="0 0.1 0"
+              scale="1.2 1.2 1.2"
+              gltf-model="starry_night_sky_hdri_background_photosphere/scene.gltf"
+              tap-gestures spin-toggle
+              drag-on-plane="plane: #dragplane; yOffset: 0.1; radius: 0.6"
+              pinch-scale twist-rotate>
+    </a-entity>
 
-      <a-entity id="story3d-a"
-                text="value: ; align: center; width: 6; color: #fffbe6; opacity: 0"
-                position="0 3 0"
-                scale="1 1 1"
-                material="shader: flat; transparent: true; depthTest: false; depthWrite: false"
-                look-at-camera always-on-top
-                visible="false"
-                animation__fadein="property: text.opacity; from: 0; to: 1; dur: 400; easing: easeOutQuad"
-                animation__fadeout="property: text.opacity; from: 1; to: 0; dur: 400; easing: easeOutQuad"
-      ></a-entity>
+    <a-entity id="story3d-a"
+              text="value: ; align: center; width: 6; color: #fffbe6; opacity: 0"
+              position="0 3 0"
+              scale="1 1 1"
+              material="shader: flat; transparent: true; depthTest: false; depthWrite: false"
+              look-at-camera always-on-top
+              visible="false"
+              animation__fadein="property: text.opacity; from: 0; to: 1; dur: 400; easing: easeOutQuad"
+              animation__fadeout="property: text.opacity; from: 1; to: 0; dur: 400; easing: easeOutQuad"
+    ></a-entity>
 
-      <!-- Marker center dot (optional) -->
-      <a-cylinder radius="0.01" height="0.001" color="#888"></a-cylinder>
-    </a-nft>
+    <!-- Marker center dot (optional) -->
+    <a-cylinder radius="0.01" height="0.001" color="#888"></a-cylinder>
+  </a-nft>
 
-    <!-- Second marker, gated to appear only after the first is seen -->
-    <a-nft
-      id="marker-b"
-      type="nft"
-      emitevents="true"
-      url="squirrel-clipart-cheek-stuffer-squirrel-vector-illustration-black-white_1027351-12994"
-      visible="false"
-      smooth="true"
-      smoothCount="10"
-      smoothTolerance="0.01"
-      smoothThreshold="5">
+  <!-- Second marker, gated to appear only after the first is seen -->
+  <a-nft
+          id="marker-b"
+          type="nft"
+          emitevents="true"
+          url="squirrel-clipart-cheek-stuffer-squirrel-vector-illustration-black-white_1027351-12994"
+          visible="false"
+          smooth="true"
+          smoothCount="10"
+          smoothTolerance="0.01"
+          smoothThreshold="5">
 
-      <a-plane id="dragplane-b" class="raytarget"
-               position="0 0 0" rotation="-90 0 0" width="2" height="2"
-               material="color: #000; opacity: 0; transparent: true"></a-plane>
+    <a-plane id="dragplane-b" class="raytarget"
+             position="0 0 0" rotation="-90 0 0" width="2" height="2"
+             material="color: #000; opacity: 0; transparent: true"></a-plane>
 
-      <a-entity id="cube-b" class="raytarget"
-                position="0 0.15 0"
-                scale="1.2 1.2 1.2"
-                gltf-model="free_-_skybox_anime_sky/scene.gltf"
-                tap-gestures spin-toggle
-                drag-on-plane="plane: #dragplane-b; yOffset: 0.15; radius: 0.6"
-                pinch-scale twist-rotate>
-      </a-entity>
+    <a-entity id="cube-b" class="raytarget"
+              position="0 0.15 0"
+              scale="1.2 1.2 1.2"
+              gltf-model="free_-_skybox_anime_sky/scene.gltf"
+              tap-gestures spin-toggle
+              drag-on-plane="plane: #dragplane-b; yOffset: 0.15; radius: 0.6"
+              pinch-scale twist-rotate>
+    </a-entity>
 
-      <a-entity id="story3d-b"
-                text="value: ; align: center; width: 6; color: #fffbe6; opacity: 0"
-                position="0 3 0"
-                scale="1 1 1"
-                material="shader: flat; transparent: true; depthTest: false; depthWrite: false"
-                look-at-camera always-on-top
-                visible="false"
-                animation__fadein="property: text.opacity; from: 0; to: 1; dur: 400; easing: easeOutQuad"
-                animation__fadeout="property: text.opacity; from: 1; to: 0; dur: 400; easing: easeOutQuad"
-      ></a-entity>
+    <a-entity id="story3d-b"
+              text="value: ; align: center; width: 6; color: #fffbe6; opacity: 0"
+              position="0 3 0"
+              scale="1 1 1"
+              material="shader: flat; transparent: true; depthTest: false; depthWrite: false"
+              look-at-camera always-on-top
+              visible="false"
+              animation__fadein="property: text.opacity; from: 0; to: 1; dur: 400; easing: easeOutQuad"
+              animation__fadeout="property: text.opacity; from: 1; to: 0; dur: 400; easing: easeOutQuad"
+    ></a-entity>
 
-      <a-cylinder radius="0.01" height="0.001" color="#444"></a-cylinder>
-    </a-nft>
+    <a-cylinder radius="0.01" height="0.001" color="#444"></a-cylinder>
+  </a-nft>
 
-    <!-- Second marker variant (alternative B), also gated after the first is seen -->
-    <a-nft
-      id="marker-b2"
-      type="nft"
-      emitevents="true"
-      url="1000_F_202005434_xKPtG0bsUUHKgl5yAUxxjgYN1qwzNrfB"
-      visible="false"
-      smooth="true"
-      smoothCount="10"
-      smoothTolerance="0.01"
-      smoothThreshold="5">
+  <!-- Second marker variant (alternative B), also gated after the first is seen -->
+  <a-nft
+          id="marker-b2"
+          type="nft"
+          emitevents="true"
+          url="1000_F_202005434_xKPtG0bsUUHKgl5yAUxxjgYN1qwzNrfB"
+          visible="false"
+          smooth="true"
+          smoothCount="10"
+          smoothTolerance="0.01"
+          smoothThreshold="5">
 
-      <a-plane id="dragplane-b2" class="raytarget"
-               position="0 0 0" rotation="-90 0 0" width="2" height="2"
-               material="color: #000; opacity: 0; transparent: true"></a-plane>
+    <a-plane id="dragplane-b2" class="raytarget"
+             position="0 0 0" rotation="-90 0 0" width="2" height="2"
+             material="color: #000; opacity: 0; transparent: true"></a-plane>
 
-      <a-entity id="cube-b2" class="raytarget"
-                position="0 0.15 0"
-                scale="1.2 1.2 1.2"
-                gltf-model="free_-_skybox_anime_sky/scene.gltf"
-                tap-gestures spin-toggle
-                drag-on-plane="plane: #dragplane-b2; yOffset: 0.15; radius: 0.6"
-                pinch-scale twist-rotate>
-      </a-entity>
+    <a-entity id="cube-b2" class="raytarget"
+              position="0 0.15 0"
+              scale="1.2 1.2 1.2"
+              gltf-model="free_-_skybox_anime_sky/scene.gltf"
+              tap-gestures spin-toggle
+              drag-on-plane="plane: #dragplane-b2; yOffset: 0.15; radius: 0.6"
+              pinch-scale twist-rotate>
+    </a-entity>
 
-      <a-entity id="story3d-b2"
-                text="value: ; align: center; width: 6; color: #fffbe6; opacity: 0"
-                position="0 3 0"
-                scale="1 1 1"
-                material="shader: flat; transparent: true; depthTest: false; depthWrite: false"
-                look-at-camera always-on-top
-                visible="false"
-                animation__fadein="property: text.opacity; from: 0; to: 1; dur: 400; easing: easeOutQuad"
-                animation__fadeout="property: text.opacity; from: 1; to: 0; dur: 400; easing: easeOutQuad"
-      ></a-entity>
+    <a-entity id="story3d-b2"
+              text="value: ; align: center; width: 6; color: #fffbe6; opacity: 0"
+              position="0 3 0"
+              scale="1 1 1"
+              material="shader: flat; transparent: true; depthTest: false; depthWrite: false"
+              look-at-camera always-on-top
+              visible="false"
+              animation__fadein="property: text.opacity; from: 0; to: 1; dur: 400; easing: easeOutQuad"
+              animation__fadeout="property: text.opacity; from: 1; to: 0; dur: 400; easing: easeOutQuad"
+    ></a-entity>
 
-      <a-cylinder radius="0.01" height="0.001" color="#555"></a-cylinder>
-    </a-nft>
+    <a-cylinder radius="0.01" height="0.001" color="#555"></a-cylinder>
+  </a-nft>
 
-    <!-- Third marker, gated to appear only after the second is seen -->
-    <a-nft
-      id="marker-c"
-      type="nft"
-      emitevents="true"
-      url="istockphoto-1413670045-612x612"
-      visible="false"
-      smooth="true"
-      smoothCount="10"
-      smoothTolerance="0.01"
-      smoothThreshold="5">
+  <!-- Third marker, gated to appear only after the second is seen -->
+  <a-nft
+          id="marker-c"
+          type="nft"
+          emitevents="true"
+          url="istockphoto-1413670045-612x612"
+          visible="false"
+          smooth="true"
+          smoothCount="10"
+          smoothTolerance="0.01"
+          smoothThreshold="5">
 
-      <a-plane id="dragplane-c" class="raytarget"
-               position="0 0 0" rotation="-90 0 0" width="2" height="2"
-               material="color: #000; opacity: 0; transparent: true"></a-plane>
+    <a-plane id="dragplane-c" class="raytarget"
+             position="0 0 0" rotation="-90 0 0" width="2" height="2"
+             material="color: #000; opacity: 0; transparent: true"></a-plane>
 
-      <a-entity id="cube-c" class="raytarget"
-                position="0 0.15 0"
-                scale="1.2 1.2 1.2"
-                gltf-model="BoxInstanced.gltf"
-                tap-gestures spin-toggle
-                drag-on-plane="plane: #dragplane-c; yOffset: 0.15; radius: 0.6"
-                pinch-scale twist-rotate>
-      </a-entity>
+    <a-entity id="cube-c" class="raytarget"
+              position="0 0.15 0"
+              scale="1.2 1.2 1.2"
+              gltf-model="BoxInstanced.gltf"
+              tap-gestures spin-toggle
+              drag-on-plane="plane: #dragplane-c; yOffset: 0.15; radius: 0.6"
+              pinch-scale twist-rotate>
+    </a-entity>
 
-      <a-entity id="story3d-c"
-                text="value: ; align: center; width: 6; color: #fffbe6; opacity: 0"
-                position="0 3 0"
-                scale="1 1 1"
-                material="shader: flat; transparent: true; depthTest: false; depthWrite: false"
-                look-at-camera always-on-top
-                visible="false"
-                animation__fadein="property: text.opacity; from: 0; to: 1; dur: 400; easing: easeOutQuad"
-                animation__fadeout="property: text.opacity; from: 1; to: 0; dur: 400; easing: easeOutQuad"
-      ></a-entity>
+    <a-entity id="story3d-c"
+              text="value: ; align: center; width: 6; color: #fffbe6; opacity: 0"
+              position="0 3 0"
+              scale="1 1 1"
+              material="shader: flat; transparent: true; depthTest: false; depthWrite: false"
+              look-at-camera always-on-top
+              visible="false"
+              animation__fadein="property: text.opacity; from: 0; to: 1; dur: 400; easing: easeOutQuad"
+              animation__fadeout="property: text.opacity; from: 1; to: 0; dur: 400; easing: easeOutQuad"
+    ></a-entity>
 
-      <a-cylinder radius="0.01" height="0.001" color="#666"></a-cylinder>
-    </a-nft>
+    <a-cylinder radius="0.01" height="0.001" color="#666"></a-cylinder>
+  </a-nft>
 
-    <a-entity camera></a-entity>
-  </a-scene>
+  <a-entity camera></a-entity>
+</a-scene>
 
-  <script>
-    const hud  = document.getElementById('hud');
-    const cube = document.getElementById('cube');
-    const cubeB = document.getElementById('cube-b');
-    const cubeB2 = document.getElementById('cube-b2');
-    const cubeC = document.getElementById('cube-c');
-    const story = document.getElementById('story');
-    const story3dA = document.getElementById('story3d-a');
-    const story3dB = document.getElementById('story3d-b');
-    const story3dB2 = document.getElementById('story3d-b2');
-    const story3dC = document.getElementById('story3d-c');
-    const ambLight = document.getElementById('ambLight');
-    const dirLight = document.getElementById('dirLight');
+<script>
+  const hud  = document.getElementById('hud');
+  const cube = document.getElementById('cube');
+  const cubeB = document.getElementById('cube-b');
+  const cubeB2 = document.getElementById('cube-b2');
+  const cubeC = document.getElementById('cube-c');
+  const story = document.getElementById('story');
+  const story3dA = document.getElementById('story3d-a');
+  const story3dB = document.getElementById('story3d-b');
+  const story3dB2 = document.getElementById('story3d-b2');
+  const story3dC = document.getElementById('story3d-c');
+  const ambLight = document.getElementById('ambLight');
+  const dirLight = document.getElementById('dirLight');
 
-    // Buttons
-    document.getElementById('btn-rot-l').addEventListener('click', () => nudgeRot(-15));
-    document.getElementById('btn-rot-r').addEventListener('click', () => nudgeRot( 15));
-    function nudgeRot(delta){
-      const r = cube.getAttribute('rotation');
-      cube.setAttribute('rotation', {x:r.x, y:r.y + delta, z:r.z});
+  // Buttons
+  document.getElementById('btn-rot-l').addEventListener('click', () => nudgeRot(-15));
+  document.getElementById('btn-rot-r').addEventListener('click', () => nudgeRot( 15));
+  function nudgeRot(delta){
+    const r = cube.getAttribute('rotation');
+    cube.setAttribute('rotation', {x:r.x, y:r.y + delta, z:r.z});
+  }
+
+  document.getElementById('btn-scale--').addEventListener('click', () => nudgeScale(0.9));
+  document.getElementById('btn-scale-+').addEventListener('click', () => nudgeScale(1.1));
+  function nudgeScale(mult){
+    const s = cube.getAttribute('scale');
+    cube.setAttribute('scale', {
+      x: clamp(s.x * mult, 0.2, 3),
+      y: clamp(s.y * mult, 0.2, 3),
+      z: clamp(s.z * mult, 0.2, 3)
+    });
+  }
+
+  document.getElementById('btn-color').addEventListener('click', () => cube.emit('random-color'));
+
+  const showStory = (msg, ms = 5000) => {
+    clearTimeout(showStory._t);
+    story.textContent = msg;
+    story.classList.add('visible');
+    showStory._t = setTimeout(() => hideStory(), ms);
+  };
+
+  const hideStory = () => {
+    clearTimeout(showStory._t);
+    story.classList.remove('visible');
+  };
+
+  // Initial prompt before any marker is found
+  showStory('Scan the sky marker to awaken the scene.', 5000);
+
+  // Gesture hooks
+  cube.addEventListener('tap',       () => cube.emit('toggle-spin'));        // single tap: spin on/off
+  cube.addEventListener('doubletap', () => cube.emit('random-color'));       // double tap: recolor
+  cube.addEventListener('longpress', () => hud.classList.toggle('hidden'));  // long press: show/hide HUD
+
+  // Sequential marker gating: B stays hidden until A is seen once
+  const markerA = document.getElementById('marker');
+  const markerB = document.getElementById('marker-b');
+  const markerB2 = document.getElementById('marker-b2');
+  const markerC = document.getElementById('marker-c');
+  let unlockedB = false;
+  let unlockedB2 = false;
+  let unlockedC = false;
+  let poppedA = false;
+  const lockMarkerB = () => {
+    markerB.object3D.visible = false;
+    markerB.setAttribute('visible', false);
+    if (cubeB && cubeB.object3D) {
+      cubeB.object3D.visible = false;
     }
-
-    document.getElementById('btn-scale--').addEventListener('click', () => nudgeScale(0.9));
-    document.getElementById('btn-scale-+').addEventListener('click', () => nudgeScale(1.1));
-    function nudgeScale(mult){
-      const s = cube.getAttribute('scale');
-      cube.setAttribute('scale', {
-        x: clamp(s.x * mult, 0.2, 3),
-        y: clamp(s.y * mult, 0.2, 3),
-        z: clamp(s.z * mult, 0.2, 3)
-      });
+  };
+  const lockMarkerB2 = () => {
+    markerB2.object3D.visible = false;
+    markerB2.setAttribute('visible', false);
+    if (cubeB2 && cubeB2.object3D) {
+      cubeB2.object3D.visible = false;
     }
+  };
+  const lockMarkerC = () => {
+    markerC.object3D.visible = false;
+    markerC.setAttribute('visible', false);
+    if (cubeC && cubeC.object3D) {
+      cubeC.object3D.visible = false;
+    }
+  };
+  lockMarkerB();
+  lockMarkerB2();
+  lockMarkerC();
+  markerB.addEventListener('componentchanged', (e) => {
+    if (e.detail.name === 'visible' && !unlockedB) {
+      lockMarkerB();
+    }
+  });
+  markerB2.addEventListener('componentchanged', (e) => {
+    if (e.detail.name === 'visible' && !unlockedB2) {
+      lockMarkerB2();
+    }
+  });
+  markerC.addEventListener('componentchanged', (e) => {
+    if (e.detail.name === 'visible' && !unlockedC) {
+      lockMarkerC();
+    }
+  });
 
-    document.getElementById('btn-color').addEventListener('click', () => cube.emit('random-color'));
+  let markerAVisible = false;
+  markerA.addEventListener('markerFound', () => {
+    markerAVisible = true;
+    hideStory();   // <= instantly hide any current story text
 
-    const showStory = (msg, ms = 5000) => {
-      clearTimeout(showStory._t);
-      story.textContent = msg;
-      story.classList.add('visible');
-      showStory._t = setTimeout(() => hideStory(), ms);
-    };
+    if (!poppedA) {
+      poppedA = true;
+      // Play a one-time scale-up when marker A is first seen
+      cube.removeAttribute('animation__pop');
+      cube.setAttribute('scale', {x:0.01, y:0.01, z:0.01});
+      cube.setAttribute('animation__pop',
+              'property: scale; to: 3 3 3; dur: 800; easing: easeOutElastic;');
+    }
+    if (!unlockedB) {
+      unlockedB = true;
+      markerB.object3D.visible = true;
+      markerB.setAttribute('visible', true);
+      if (cubeB && cubeB.object3D) cubeB.object3D.visible = true;
+    }
+    if (!unlockedB2) {
+      unlockedB2 = true;
+      markerB2.object3D.visible = true;
+      markerB2.setAttribute('visible', true);
+      if (cubeB2 && cubeB2.object3D) cubeB2.object3D.visible = true;
+    }
+  });
 
-    const hideStory = () => {
-      clearTimeout(showStory._t);
-      story.classList.remove('visible');
-    };
+  markerA.addEventListener('markerLost', () => {
+    markerAVisible = false;
+    showStory('The starry sky stirs—find the guardian.', 5000);
+  });
 
-    // Initial prompt before any marker is found
-    showStory('Scan the sky marker to awaken the scene.', 5000);
+  let markerBVisible = false;
+  markerB.addEventListener('markerFound', () => {
+    markerBVisible = true;
+    showStory('Guardian revealed. The anime sky awaits.', 5000);
+    if (!unlockedC) {
+      unlockedC = true;
+      markerC.object3D.visible = true;
+      markerC.setAttribute('visible', true);
+      if (cubeC && cubeC.object3D) cubeC.object3D.visible = true;
+    }
+  });
 
-    // Gesture hooks
-    cube.addEventListener('tap',       () => cube.emit('toggle-spin'));        // single tap: spin on/off
-    cube.addEventListener('doubletap', () => cube.emit('random-color'));       // double tap: recolor
-    cube.addEventListener('longpress', () => hud.classList.toggle('hidden'));  // long press: show/hide HUD
+  markerB.addEventListener('markerLost', () => {
+    markerBVisible = false;
+    showStory('Guardian revealed. The anime sky awaits.', 5000);
+  });
 
-    // Sequential marker gating: B stays hidden until A is seen once
-    const markerA = document.getElementById('marker');
-    const markerB = document.getElementById('marker-b');
-    const markerB2 = document.getElementById('marker-b2');
-    const markerC = document.getElementById('marker-c');
-    let unlockedB = false;
-    let unlockedB2 = false;
-    let unlockedC = false;
-    let poppedA = false;
-    const lockMarkerB = () => {
-      markerB.object3D.visible = false;
-      markerB.setAttribute('visible', false);
-      if (cubeB && cubeB.object3D) {
-        cubeB.object3D.visible = false;
-      }
-    };
-    const lockMarkerB2 = () => {
-      markerB2.object3D.visible = false;
-      markerB2.setAttribute('visible', false);
-      if (cubeB2 && cubeB2.object3D) {
-        cubeB2.object3D.visible = false;
-      }
-    };
-    const lockMarkerC = () => {
-      markerC.object3D.visible = false;
-      markerC.setAttribute('visible', false);
-      if (cubeC && cubeC.object3D) {
-        cubeC.object3D.visible = false;
-      }
-    };
-    lockMarkerB();
-    lockMarkerB2();
-    lockMarkerC();
-    markerB.addEventListener('componentchanged', (e) => {
-      if (e.detail.name === 'visible' && !unlockedB) {
-        lockMarkerB();
-      }
-    });
-    markerB2.addEventListener('componentchanged', (e) => {
-      if (e.detail.name === 'visible' && !unlockedB2) {
-        lockMarkerB2();
-      }
-    });
-    markerC.addEventListener('componentchanged', (e) => {
-      if (e.detail.name === 'visible' && !unlockedC) {
-        lockMarkerC();
-      }
-    });
+  let markerB2Visible = false;
+  markerB2.addEventListener('markerFound', () => {
+    markerB2Visible = true;
+    showStory('Guardian variant scanned — alternate path unlocked.', 5000);
+    if (!unlockedC) {
+      unlockedC = true;
+      markerC.object3D.visible = true;
+      markerC.setAttribute('visible', true);
+      if (cubeC && cubeC.object3D) cubeC.object3D.visible = true;
+    }
+  });
 
-    let markerAVisible = false;
-    markerA.addEventListener('markerFound', () => {
-      markerAVisible = true;
-      hideStory();   // <= instantly hide any current story text
+  markerB2.addEventListener('markerLost', () => {
+    markerB2Visible = false;
+    showStory('Guardian variant scanned — alternate path unlocked.', 5000);
+    // message already shown on found
+  });
 
-      if (!poppedA) {
-        poppedA = true;
-        // Play a one-time scale-up when marker A is first seen
-        cube.removeAttribute('animation__pop');
-        cube.setAttribute('scale', {x:0.01, y:0.01, z:0.01});
-        cube.setAttribute('animation__pop',
-                'property: scale; to: 3 3 3; dur: 800; easing: easeOutElastic;');
-      }
-      if (!unlockedB) {
-        unlockedB = true;
-        markerB.object3D.visible = true;
-        markerB.setAttribute('visible', true);
-        if (cubeB && cubeB.object3D) cubeB.object3D.visible = true;
-      }
-      if (!unlockedB2) {
-        unlockedB2 = true;
-        markerB2.object3D.visible = true;
-        markerB2.setAttribute('visible', true);
-        if (cubeB2 && cubeB2.object3D) cubeB2.object3D.visible = true;
-      }
-    });
+  let markerCVisible = false;
+  markerC.addEventListener('markerFound', () => {
+    markerCVisible = true;
+    hideStory();
+    // showStory('Final horizon unlocked — the journey is complete.', 5000);
+  });
 
-    markerA.addEventListener('markerLost', () => {
-      markerAVisible = false;
-      showStory('The starry sky stirs—find the guardian.', 5000);
-    });
+  markerC.addEventListener('markerLost', () => {
+    markerCVisible = false;
+    showStory('Final horizon unlocked — the journey is complete.', 5000);
+  });
 
-    let markerBVisible = false;
-    markerB.addEventListener('markerFound', () => {
-      markerBVisible = true;
-      if (!unlockedC) {
-        unlockedC = true;
-        markerC.object3D.visible = true;
-        markerC.setAttribute('visible', true);
-        if (cubeC && cubeC.object3D) cubeC.object3D.visible = true;
-      }
-      showStory('Guardian revealed. The anime sky awaits.', 5000);
-    });
-
-    markerB.addEventListener('markerLost', () => {
-      markerBVisible = false;
-    });
-
-    let markerB2Visible = false;
-    markerB2.addEventListener('markerFound', () => {
-      if (!unlockedC) {
-        unlockedC = true;
-        markerC.object3D.visible = true;
-        markerC.setAttribute('visible', true);
-        if (cubeC && cubeC.object3D) cubeC.object3D.visible = true;
-      }
-      markerB2Visible = true;
-      showStory('Guardian variant scanned — alternate path unlocked.', 5000);
-    });
-
-    markerB2.addEventListener('markerLost', () => {
-      markerB2Visible = false;
-    });
-
-    let markerCVisible = false;
-    markerC.addEventListener('markerFound', () => {
-      if (!unlockedC) {
-        lockMarkerC();
-        return;
-      }
-      markerCVisible = true;
-      hideStory();
-      // showStory('Final horizon unlocked — the journey is complete.', 5000);
-    });
-
-    markerC.addEventListener('markerLost', () => {
-      if (!unlockedC) return;
-      markerCVisible = false;
-      showStory('Final horizon unlocked — the journey is complete.', 5000);
-    });
-
-    // Reliable marker lost detection for NFT markers
-    // setInterval(() => {
-    //   // --- Marker A ---
-    //   const isAVisible = markerA.object3D.visible;
-    //   if (isAVisible && !markerAVisible) {
-    //     markerAVisible = true;
-    //     hideStory();
-    //   }
-    //   if (!isAVisible && markerAVisible) {
-    //     markerAVisible = false;
-    //     showStory('The starry sky stirs—find the guardian.', 5000);
-    //   }
-    //
-    //   // --- Marker B ---
-    //   const isBVisible = markerB.object3D.visible;
-    //   if (isBVisible && !markerBVisible) {
-    //     markerBVisible = true;
-    //     hideStory();
-    //   }
-    //   if (!isBVisible && markerBVisible) {
-    //     markerBVisible = false;
-    //     // showStory('Guardian revealed. The anime sky awaits.', 5000);
-    //     showStory('Clean sky unlocked — enjoy the guardian realm.', 5000);
-    //   }
-    // }, 150); // runs every 150ms
-
-  </script>
+</script>
 </body>
 </html>
